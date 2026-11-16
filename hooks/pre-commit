@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+# agent-policies pre-commit: secret scan of staged changes, lint, drift check.
+# Enable with `make install-hooks`. Bypassing with --no-verify needs user approval (GIT-1).
+# Portable to macOS /bin/bash 3.2: no mapfile, no associative arrays.
+set -euo pipefail
+cd "$(git rev-parse --show-toplevel)"
+if ! command -v gitleaks >/dev/null 2>&1; then
+  echo "pre-commit: gitleaks not found; install it (brew install gitleaks) before committing" >&2
+  exit 1
+fi
+gitleaks git --pre-commit --staged --redact --no-banner --config .gitleaks.toml
+make --no-print-directory lint
+make --no-print-directory check

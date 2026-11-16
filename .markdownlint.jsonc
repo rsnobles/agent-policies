@@ -1,0 +1,12 @@
+{
+  // markdownlint defaults, plus:
+  "default": true,
+  // Prose is not hard-wrapped; tables and code are long by nature.
+  "MD013": false,
+  // Repeated headings are fine in different sections (e.g. "Rules").
+  "MD024": { "siblings_only": true },
+  // Never use emphasis as a heading (user preference; also the default).
+  "MD036": true,
+  // Inline HTML only for GitHub-native collapsible sections.
+  "MD033": { "allowed_elements": ["details", "summary"] }
+}

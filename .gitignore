@@ -1,0 +1,17 @@
+# dist/ is committed on purpose so generated artifacts are reviewable in diffs.
+
+# Local-only notes and environment-specific values: kept on disk, never committed.
+local/
+policy.local.yaml
+
+# Tooling
+.venv/
+__pycache__/
+*.py[cod]
+node_modules/
+*.tmp
+
+# OS and editors
+.DS_Store
+.idea/
+.vscode/

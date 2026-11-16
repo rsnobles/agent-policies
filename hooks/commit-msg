@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# agent-policies commit-msg: subject line required, at most 72 characters.
+set -euo pipefail
+subject=$(grep -v '^#' "$1" | head -n1)
+if [[ -z "$subject" ]]; then echo "commit-msg: empty subject" >&2; exit 1; fi
+if ((${#subject} > 72)); then echo "commit-msg: subject over 72 characters" >&2; exit 1; fi

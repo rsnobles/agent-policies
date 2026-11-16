@@ -1,0 +1,131 @@
+# agent-policies: canonical policy. Single source of truth for every target.
+# Edit this file (and shared/, targets/, bots/), then run `make render`.
+# Every generated file in dist/ carries `version` below. Bump it on any rule change.
+version: 0.2.0
+updated: 2026-11-16
+owner: RSNobles
+license: MIT  # SPDX identifier; full text in LICENSE
+
+targets: [grok-bot, cursor, grok-build]
+
+# /workspace runtime layout, FHS-style. `owner` is a convention, not a file permission:
+# every agent runs as the same OS user, so ownership is enforced by rules.
+workspace:
+  root: /workspace
+  layout:
+    - {path: "bots/<bot>/", owner: "<bot>", purpose: "A bot's private working files and its AGENTS.md copy"}
+    - {path: "src/<repo>/", owner: "repo maintainer", purpose: "Git checkouts, like /usr/src (agent-policies lives here)"}
+    - {path: "srv/<service>/", owner: "<service>", purpose: "Long-running service install and data (for example srv/alloy)"}
+    - {path: "etc/<name>/", owner: "make install", purpose: "Installed configuration; etc/registry.json is the manifest"}
+    - {path: "run/<bot>/status.json", owner: "<bot>", purpose: "Current state, rewritten atomically each turn (our stand-in for /proc)"}
+    - {path: "shared/", owner: "any", purpose: "Files deliberately shared between bots"}
+    - {path: "tmp/", owner: "any", purpose: "Scratch; may be wiped at any time"}
+    - {path: "var/lib/<name>/", owner: "<name>", purpose: "Persistent state that is not config"}
+    - {path: "var/log/<bot>/", owner: "<bot>", purpose: "Append-only logs, one structured line per turn"}
+    - {path: "var/metrics/", owner: "metric writer", purpose: "Prometheus text-format *.prom files picked up by Alloy"}
+    - {path: "var/spool/<queue>/", owner: "consumer", purpose: "Work queues; producers write temp then rename() in"}
+    - {path: "var/archive/", owner: "any", purpose: "Retired bots' and old artifacts, read-only by convention"}
+
+rules:
+  - id: OWN-1
+    title: Write only your own paths
+    text: A bot writes only under paths it owns per the layout and `etc/registry.json`. Everything else is read-only to it.
+    enforced_by: [convention, auto-review]
+  - id: OWN-2
+    title: Register before you write
+    text: A new bot or service is added to `etc/registry.json` (owner, paths, ports) before it creates files.
+    enforced_by: [convention]  # no automated check exists yet
+  - id: ATOM-1
+    title: Atomic handoff
+    text: Write to a temp file in the same directory, then rename() it into place. Never let a reader see a partial file.
+    enforced_by: [convention]
+  - id: SEC-1
+    title: No secrets on disk or in git
+    text: Never write secrets, tokens or environment values to `/workspace`, logs, memory or any repo. Never print environment variables.
+    enforced_by: [convention, auto-review, hook]
+  - id: SEC-2
+    title: Secrets come from a secret store
+    text: Logins and API keys come from the environment's secret store (a vault or a masked secret request), never from files in a repo or workspace.
+    enforced_by: [convention]
+  - id: LOG-1
+    title: Log every turn
+    text: Append one JSON line per turn to `var/log/<bot>/turns.jsonl` with `start`, `end`, `duration_s`, `tools`, `messages_sent`, `errors`. Log counts and metadata, never message content.
+    enforced_by: [convention]
+  - id: RUN-1
+    title: Publish status atomically
+    text: At the end of each turn, write `run/<bot>/status.json` (temp then rename).
+    enforced_by: [convention]
+  - id: CTX-1
+    title: Context hygiene
+    text: Read only what the task needs, page large files, prefer files and checkpoints over long chat context, and keep replies concise.
+    enforced_by: [convention]
+  - id: GIT-1
+    title: No remote side effects without approval
+    text: No push, force-push, remote creation, history rewrite or hook bypass without explicit user approval.
+    enforced_by: [convention, auto-review, hook]
+  - id: RET-1
+    title: Retirement is bounded
+    text: Retiring a bot touches only `bots/<bot>/`, `run/<bot>/`, `var/log/<bot>/` (moved to `var/archive/`) and its `etc/registry.json` entry.
+    enforced_by: [convention]  # no automated check exists yet
+  - id: DOC-1
+    title: Lint-clean Markdown
+    text: Real headings (never bold as a heading), commands in fenced bash blocks, no emoji, plain words. markdownlint must pass.
+    enforced_by: [convention, hook]
+
+# Guidelines, not enforced limits. Per-bot token use is visible only in the app's usage report.
+limits:
+  - {name: reply_length, value: "concise; expand only when asked", kind: guideline}
+  - {name: context, value: "checkpoint to a file before the window fills; do not re-read large outputs", kind: guideline}
+  - {name: tokens_per_bot_per_day, value: "watched via daily usage routine into var/metrics", kind: guideline}
+  - {name: log_line_bytes, value: 4096, kind: guideline}
+
+# Hook intents. Each target maps an intent to what it can enforce. Hooks are guardrails
+# against mistakes, not security boundaries; see SECURITY.md. The Cursor guard parses
+# commands (quote-aware, wrappers stripped, `sh -c` followed) instead of matching regexes.
+hooks:
+  - id: deny-env-dump
+    intent: Block shell commands that print the environment or secret files.
+    action: deny
+    secret_names: []   # environment-specific names go in policy.local.yaml (Git-ignored)
+    grok-bot: auto-review
+    cursor: beforeShellExecution
+    git: none
+  - id: deny-remote-writes
+    intent: Ask before pushing, adding remotes, skipping hooks or changing GitHub state.
+    action: ask
+    gh_write:
+      pr: [create, merge, close, edit, comment, review, ready]
+      repo: [create, delete, edit, rename, archive, fork]
+      release: [create, delete, edit, upload]
+      secret: [set, delete]
+      variable: [set, delete]
+      workflow: [run, enable, disable]
+      issue: [create, close, edit, comment, delete]
+    grok-bot: auto-review
+    cursor: beforeShellExecution
+    git: none
+  - id: deny-workspace-wipe
+    intent: Block recursive deletes of /workspace roots.
+    action: deny
+    root: /workspace
+    protected_dirs: [etc, var, src, bots, srv, run, shared]
+    grok-bot: auto-review
+    cursor: beforeShellExecution
+    git: none
+  - id: pre-commit-gate
+    intent: Secret-scan (gitleaks), lint and drift-check before every commit.
+    action: deny
+    grok-bot: none
+    cursor: none
+    git: pre-commit
+
+skills:
+  - name: workspace-conventions
+    source: dist/grok-bot/workspace-conventions/
+    targets: [grok-bot]
+  - name: typesafe-ai
+    source: typesafe-ai/skills
+    path: skills/typesafe-ai
+    version: unpinned   # pin to a commit SHA before rollout
+    install: npx skills add typesafe-ai/skills --skill typesafe-ai
+    targets: [grok-bot, cursor, grok-build]
