@@ -1,0 +1,6 @@
+# Every path needs the maintainer's review. Listed explicitly for the paths that matter most.
+*                     @rsnobles
+/.github/             @rsnobles
+/policy.yaml          @rsnobles
+/hooks/               @rsnobles
+/targets/cursor/      @rsnobles

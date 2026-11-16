@@ -1,0 +1,36 @@
+${header}
+
+# Installing agent-policies ${version}
+
+Generated artifacts live under `dist/`. Each environment takes a different slice; the rules are the same.
+
+## Grok Bot
+
+1. Add `dist/grok-bot/workspace-conventions/` to the shared skill library (the bot installs it; the skill library is served by the app, not a folder you manage).
+2. Add one line to each bot's instructions: "Load the workspace-conventions skill at the start of every turn."
+3. Review `dist/grok-bot/auto-review-rules.md` and add the rules you accept in the app.
+4. Copy `dist/bots/<bot>/AGENTS.md` to `/workspace/bots/<bot>/AGENTS.md`.
+
+## Cursor and Cloud Agents
+
+Copy the Cursor slice into the root of the target repository and commit it. Cloud Agents read `AGENTS.md`, `.cursor/rules/` and `.cursor/environment.json` from the repo they run on.
+
+```bash
+cp -r dist/cursor/. /path/to/target-repo/
+```
+
+## Grok Build
+
+Copy `dist/grok-build/AGENTS.md` to the project root. Paths are provisional until confirmed.
+
+## External skills
+
+Installed in Cursor, Cloud Agents and Grok Build with the commands below (add `-g` for a global install). For Grok Bots, copy the pinned skill directory into the shared skill library.
+
+${skills_md}
+
+## Verify
+
+```bash
+make check
+```

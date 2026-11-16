@@ -1,0 +1,76 @@
+{
+  "version": "0.2.0",
+  "hooks": [
+    {
+      "id": "deny-env-dump",
+      "intent": "Block shell commands that print the environment or secret files.",
+      "action": "deny",
+      "secret_names": []
+    },
+    {
+      "id": "deny-remote-writes",
+      "intent": "Ask before pushing, adding remotes, skipping hooks or changing GitHub state.",
+      "action": "ask",
+      "gh_write": {
+        "pr": [
+          "create",
+          "merge",
+          "close",
+          "edit",
+          "comment",
+          "review",
+          "ready"
+        ],
+        "repo": [
+          "create",
+          "delete",
+          "edit",
+          "rename",
+          "archive",
+          "fork"
+        ],
+        "release": [
+          "create",
+          "delete",
+          "edit",
+          "upload"
+        ],
+        "secret": [
+          "set",
+          "delete"
+        ],
+        "variable": [
+          "set",
+          "delete"
+        ],
+        "workflow": [
+          "run",
+          "enable",
+          "disable"
+        ],
+        "issue": [
+          "create",
+          "close",
+          "edit",
+          "comment",
+          "delete"
+        ]
+      }
+    },
+    {
+      "id": "deny-workspace-wipe",
+      "intent": "Block recursive deletes of /workspace roots.",
+      "action": "deny",
+      "root": "/workspace",
+      "protected_dirs": [
+        "etc",
+        "var",
+        "src",
+        "bots",
+        "srv",
+        "run",
+        "shared"
+      ]
+    }
+  ]
+}

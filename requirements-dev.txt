@@ -1,0 +1,6 @@
+# Tools for make render/test/lint. Pinned; Dependabot proposes updates.
+# Install into a virtual environment: make setup
+PyYAML==6.0.3
+shellcheck-py==0.11.0.1
+actionlint-py==1.7.12.25
+zizmor==1.32.0

@@ -1,0 +1,9 @@
+# gitleaks configuration: the default rule set plus keys this project's agents use.
+[extend]
+useDefault = true
+
+[[rules]]
+id = "xai-api-key"
+description = "xAI API key"
+regex = '''\bxai-[A-Za-z0-9]{70,100}\b'''
+keywords = ["xai-"]

@@ -1,0 +1,21 @@
+# Weekly update PRs for pinned GitHub Actions and Python tools. Grouped to keep PRs few.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        patterns: ["*"]
+  - package-ecosystem: pip
+    directory: /
+    schedule:
+      interval: weekly
+    cooldown:
+      default-days: 7
+    groups:
+      python-tools:
+        patterns: ["*"]
